@@ -1,0 +1,10 @@
+from enum import Enum
+
+
+class MessageType(Enum):
+    MESSAGE_BLANK = 0
+    MESSAGE_UNKNOWN = 1
+    MESSAGE_SSL_VISION_2010 = 2
+    MESSAGE_SSL_REFBOX_2013 = 3
+    MESSAGE_SSL_VISION_2014 = 4
+    MESSAGE_SSL_VISION_TRACKER_2020 = 5
