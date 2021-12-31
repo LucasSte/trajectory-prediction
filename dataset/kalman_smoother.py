@@ -29,8 +29,7 @@ class KalmanSmoother:
     params_initial = auto_ks.KalmanSmootherParameters(A, W_neg_sqrt, C, V_neg_sqrt)
     params = None
 
-
-    def __init__(self, process_noise_factor, sensor_noise_factor):
+    def __init__(self, process_noise_factor=1, sensor_noise_factor=1):
         self.W_neg_sqrt = process_noise_factor*self.W_neg_sqrt
         self.V_neg_sqrt = sensor_noise_factor*self.V_neg_sqrt
 
@@ -76,6 +75,10 @@ class KalmanSmoother:
     def save_params(self, file_name):
         with open(file_name + '.pkl', 'wb') as f:
             pickle.dump(self.params, f)
+
+    def load_params(self, file_name):
+        f = open(file_name, 'rb')
+        self.params = pickle.load(f)
 
     def call(self, training_data: SSLData, testing_data: SSLData, file_name, lr=1e-2, niter=25):
         self.fit_for_series(training_data.dim_1, training_data.dim_2, training_data.mask, lr, niter)
