@@ -5,7 +5,7 @@ import numpy as np
 
 
 def get_robots():
-    f = open('data_set_1.log', 'rb')
+    f = open('data_set_1.pkl', 'rb')
     robots = pickle.load(f)
     robot_1 = robots['blue'][0][1]
     robot_2 = robots['yellow'][0][2]
@@ -28,11 +28,11 @@ def get_robot_position_series_params():
     )
 
     fitter = KalmanSmoother(1, 0.1)
-    fitter.call(training_data, testing_data, 'position_series_params')
+    fitter.call(training_data, testing_data, 'position_series_params', lr=1e-2, niter=25)
 
 
 def get_robot_heading_series_params():
-    robot_1, robot_2 = get_robots()
+    robot_2, robot_1 = get_robots()
     psi_1 = np.array(robot_1['psi'])
     sin_1 = np.sin(psi_1)
     cos_1 = np.cos(psi_1)
@@ -51,13 +51,15 @@ def get_robot_heading_series_params():
     plt.plot(time, psi_2, 'b')
     plt.plot(time, psi_2_smoothed, 'r')
     plt.legend(['original', 'smoothed'])
+    plt.show()
 
     fitter.save_params('heading_series_params')
 
 
 def get_ball_position_series_params():
-    f = open('data_set_1.log', 'rb')
-    ball = pickle.load(f)['ball']
+    f = open('data_set_1.pkl', 'rb')
+    file_data = pickle.load(f)
+    ball = file_data['ball']
     ball_1 = ball[1]
     ball_2 = ball[0]
 

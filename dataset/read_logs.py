@@ -46,7 +46,7 @@ def add_robot_element(dic, st, elem, pkt):
                 dic[elem.robot_id]['psi'].append(dic[elem.robot_id]['psi'][-1])
                 dic[elem.robot_id]['time_c'].append(dic[elem.robot_id]['time_c'][-1] + (1 / 60))
                 dic[elem.robot_id]['mask'].append(False)
-            add_robot_measurement(dict, elem, pkt)
+            add_robot_measurement(dic, elem, pkt)
             st.add(elem.robot_id)
 
 
@@ -72,7 +72,6 @@ def add_ball_element(dic, elem, pkt):
                 break
             dic['x'].append(dic['x'][-1])
             dic['y'].append(dic['y'][-1])
-            dic['z'].append(dic['y'][-1])
             dic['time_c'].append(dic['time_c'][-1] + (1 / 60))
             dic['mask'].append(False)
         add_ball_measurement(dic, elem, pkt)
@@ -80,7 +79,7 @@ def add_ball_element(dic, elem, pkt):
 
 def process_log(path):
     reader = Reader(path + '.log')
-    msg_type = reader.decode_msg()
+    reader.read_header()
     collect = False
     i = 0
 
@@ -91,6 +90,7 @@ def process_log(path):
     all_data = {'yellow': [], 'blue': [], 'ball': [], 'stop_id': []}
 
     while reader.has_next():
+        msg_type = reader.decode_msg()
         if msg_type == MessageType.MESSAGE_SSL_VISION_2010 or msg_type == MessageType.MESSAGE_SSL_VISION_2014:
             wrapper_packet = reader.get_wrapper_packet()
             # We discard the first packet to decrease noise
@@ -112,7 +112,7 @@ def process_log(path):
                 add_ball_element(ball, elem, wrapper_packet)
 
         elif msg_type == MessageType.MESSAGE_SSL_REFBOX_2013:
-            referee_packet = reader.get_wrapper_packet()
+            referee_packet = reader.get_referee_packet()
             command = referee_packet.command
 
             # Command that start the game (NORMAL_START = 2 OR FORCE_START=3)

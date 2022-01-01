@@ -52,7 +52,7 @@ class Smoother:
                 'y': xhat[:, 2],
                 'v_x': xhat[:, 1],
                 'v_y': xhat[:, 2],
-                'time_c': ball['time_c']
+                'time_c': cur['time_c']
             }
 
     def smooth_data(self, source_file, dest_file):

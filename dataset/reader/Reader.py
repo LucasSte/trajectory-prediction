@@ -13,8 +13,7 @@ class Reader:
     referee_packet = None
 
     def __init__(self, path):
-        self.path = path
-        self.file = open(path, "rb")
+        self.file = open(path, 'rb')
 
     def read_header(self):
         name = self.file.read(12)
