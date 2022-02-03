@@ -30,7 +30,7 @@ def merge_teams(team_1, team_2):
     return data
 
 
-def get_avg_std_for_robots(data):
+def get_avg_std_for_robots_merged(data):
     flat_x_coord = np.array(list(itertools.chain(*data['position']['x'])))
     flat_y_coord = np.array(list(itertools.chain(*data['position']['y'])))
     flat_vx = np.array(list(itertools.chain(*data['speed']['x'])))
@@ -51,7 +51,52 @@ def get_avg_std_for_robots(data):
     return avg, std
 
 
+def get_avg_std_for_robots(robots_data):
+    merged_data = None
+    for item in robots_data:
+        if merged_data is None:
+            merged_data = item
+        else:
+            merged_data = merge_teams(merged_data, item)
+
+    return get_avg_std_for_robots_merged(merged_data)
+
+
+def get_avg_std_for_ball(ball_data):
+    ball_x = []
+    ball_y = []
+    ball_vx = []
+    ball_vy = []
+
+    for ball_data_set in ball_data:
+        for _, value in ball_data_set.items():
+            ball_x.append(value['x'])
+            ball_y.append(value['y'])
+            ball_vx.append(value['v_x'])
+            ball_vy.append(value['v_y'])
+
+    ball_x = np.concatenate(ball_x, axis=0)
+    ball_y = np.concatenate(ball_y, axis=0)
+    ball_vx = np.concatenate(ball_vx, axis=0)
+    ball_vy = np.concatenate(ball_vy, axis=0)
+
+    x_ball_avg, x_ball_std = np.mean(ball_x), np.std(ball_x)
+    y_ball_avg, y_ball_std = np.mean(ball_y), np.std(ball_y)
+    vx_ball_avg, vx_ball_std = np.mean(ball_vx), np.std(ball_vx)
+    vy_ball_avg, vy_ball_std = np.mean(ball_vy), np.std(ball_vy)
+
+    ball_avg = np.asarray((x_ball_avg, y_ball_avg, vx_ball_avg, vy_ball_avg))
+    ball_std = np.asarray((x_ball_std, y_ball_std, vx_ball_std, vy_ball_std))
+
+    return ball_avg, ball_std
+
+
 class LoadDataSet:
+
+    ball_avg = None
+    ball_std = None
+    robots_avg = None
+    robots_std = None
 
     def __init__(self, look_back, look_forth):
         self.look_back = look_back
@@ -78,7 +123,7 @@ class LoadDataSet:
             mask[0:diff] = [False]*diff
 
         return np.stack([pos_x, pos_y, speed_x, speed_y]).T, np.array(mask, dtype=np.bool)
-    
+
     @staticmethod
     def get_robot_data(data, index):
         x = data['pos']['x'][index]
@@ -88,3 +133,22 @@ class LoadDataSet:
         psi = data['psi'][index]
 
         return np.stack([x, y, v_x, v_y, psi]).T
+
+    '''
+    Receives a list of .pkl files to load
+    '''
+    def load_data_as_train(self, data_sets: list):
+        robot_data = []
+        ball_data = []
+        for elem in data_sets:
+            blue, yellow, ball = load_data(elem)
+            new_data = merge_teams(blue, yellow)
+            robot_data.append(new_data)
+            ball_data.append(ball)
+
+        self.ball_avg, self.ball_std = get_avg_std_for_ball(ball_data)
+        self.robots_avg, self.robots_std = get_avg_std_for_robots(robot_data)
+
+        # TODO: Prepare single trajectories
+
+
