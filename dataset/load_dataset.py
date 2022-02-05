@@ -2,6 +2,7 @@ import bisect
 import pickle
 import numpy as np
 import itertools
+from sklearn.utils import shuffle
 
 
 def load_data(file_path):
@@ -137,7 +138,7 @@ class LoadDataSet:
     '''
     Receives a list of .pkl files to load
     '''
-    def load_data_as_train(self, data_sets: list):
+    def load_data(self, data_sets: list, for_test=False):
         robot_data = []
         ball_data = []
         for elem in data_sets:
@@ -149,6 +150,61 @@ class LoadDataSet:
         self.ball_avg, self.ball_std = get_avg_std_for_ball(ball_data)
         self.robots_avg, self.robots_std = get_avg_std_for_robots(robot_data)
 
-        # TODO: Prepare single trajectories
+        data_x, ball_x, ball_mask, data_y = None, None, None, None
+        for i in range(0, len(robot_data)):
+            cur_x, cur_ball_x, cur_ball_mask, cur_y = self.create_dataset(robot_data[i], ball_data[i], for_test)
+
+            if data_x is None:
+                data_x = cur_x
+                ball_x = cur_ball_x
+                ball_mask = cur_ball_mask
+                data_y = cur_y
+            else:
+                data_x = np.concatenate([data_x, cur_x], axis=0)
+                ball_x = np.concatenate([ball_x, cur_ball_x], axis=0)
+                ball_mask = np.concatenate([ball_mask, cur_ball_mask], axis=0)
+                data_y = np.concatenate([data_y, cur_y], axis=0)
+
+        if for_test:
+            return data_x, ball_x, ball_mask, data_y
+        else:
+            return shuffle(data_x, ball_x, ball_mask, data_y, random_state=0)
+
+    def create_dataset(self, robot_data, ball_data, for_test=False):
+        data_x, data_y, ball_x, ball_mask = [], [], [], []
+        y_dim = 0 if for_test else 2
+        for k in range(len(robot_data['pos']['x'])):
+            time_c = robot_data['time_c'][k]
+            stop_id = robot_data['id'][k]
+            robot_pair = LoadDataSet.get_robot_data(robot_data, k)
+            self.process_points(robot_pair, data_x, data_y, ball_x, ball_data, stop_id, time_c, ball_mask, y_dim)
+
+        return np.array(data_x), np.array(ball_x), np.array(ball_mask, dtype=np.bool), np.array(data_y)
+
+    def process_points(self, robot_pair, data_x, data_y, ball_x, ball_data, stop_id, time_c, mask, y_dim):
+        for i in range(len(robot_pair) - self.look_back - self.look_forth):
+            time_id = time_c[min(i+self.look_back, len(time_c))]
+            ball_sorted_data, ball_mask = self.get_ball_data(ball_data, stop_id, time_id)
+            ball_sorted_data = (ball_sorted_data - self.ball_avg) / self.ball_std
+            x_set = (robot_pair[i:(i + self.look_back), 0:5] - self.robots_avg[0:5]) / self.robots_std[0:5]
+            y_set = (robot_pair[(i+self.look_back - 1):(i + self.look_back + self.look_forth-1), y_dim:4]
+                     - self.robots_avg[y_dim:4])/self.robots_std[y_dim:4]
+            data_x.append(x_set)
+            data_y.append(y_set)
+            ball_x.append(ball_sorted_data)
+            mask.append(ball_mask)
+
+    def prepare_single_trajectory_for_test(self, robot_data, ball_data, index):
+        data_x, data_y, ball_x, ball_mask = [], [], [], []
+        time_c = robot_data['time_c'][index]
+        stop_id = robot_data['stop_id'][index]
+        robot_pair = LoadDataSet.get_robot_data(robot_data, index)
+        self.process_points(robot_pair, data_x, data_y, ball_x, ball_data, stop_id, time_c, ball_mask, 0)
+        return np.array(data_x), np.array(data_y), np.array(ball_mask, dtype=np.bool), np.array(data_y)
+
+    def convert_to_real(self, robot_data):
+        for i in range(np.shape(robot_data)[0]):
+            robot_data[i] = robot_data[i] * self.robots_std + self.robots_std
+
 
 
