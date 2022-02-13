@@ -118,17 +118,17 @@ class LoadDataSet:
         if size < self.look_back:
             diff = self.look_back - size
             pos_x = np.concatenate([np.array([local['x'][0]]*diff), pos_x], axis=0)
-            pos_y = np.concatenate([np.array([local['y'][0]*diff]), pos_y], axis=0)
-            speed_x = np.concatenate([np.array([local['v_x'][0]*diff]), speed_x], axis=0)
-            speed_y = np.concatenate([np.array([local['v_y'][0]*diff]), speed_y], axis=0)
+            pos_y = np.concatenate([np.array([local['y'][0]]*diff), pos_y], axis=0)
+            speed_x = np.concatenate([np.array([local['v_x'][0]]*diff), speed_x], axis=0)
+            speed_y = np.concatenate([np.array([local['v_y'][0]]*diff), speed_y], axis=0)
             mask[0:diff] = [False]*diff
 
         return np.stack([pos_x, pos_y, speed_x, speed_y]).T, np.array(mask, dtype=np.bool)
 
     @staticmethod
     def get_robot_data(data, index):
-        x = data['pos']['x'][index]
-        y = data['pos']['y'][index]
+        x = data['position']['x'][index]
+        y = data['position']['y'][index]
         v_x = data['speed']['x'][index]
         v_y = data['speed']['y'][index]
         psi = data['psi'][index]
@@ -173,9 +173,9 @@ class LoadDataSet:
     def create_dataset(self, robot_data, ball_data, for_test=False):
         data_x, data_y, ball_x, ball_mask = [], [], [], []
         y_dim = 0 if for_test else 2
-        for k in range(len(robot_data['pos']['x'])):
+        for k in range(len(robot_data['position']['x'])):
             time_c = robot_data['time_c'][k]
-            stop_id = robot_data['id'][k]
+            stop_id = robot_data['stop_id'][k]
             robot_pair = LoadDataSet.get_robot_data(robot_data, k)
             self.process_points(robot_pair, data_x, data_y, ball_x, ball_data, stop_id, time_c, ball_mask, y_dim)
 
