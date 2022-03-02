@@ -1,6 +1,6 @@
 import typing
 import tensorflow as tf
-from aggregator import AttentionAggregator
+from aggregator import AttentionAggregator2D
 from shape_checker import ShapeChecker
 
 
@@ -47,7 +47,7 @@ class Decoder(tf.keras.layers.Layer):
         self.lstm = tf.keras.layers.LSTM(self.dec_units,
                                          return_sequences=True,
                                          return_state=True)
-        self.attention = AttentionAggregator(self.dec_units)
+        self.attention = AttentionAggregator2D(self.dec_units)
         self.fc = tf.keras.layers.Dense(seq_dim, activation='linear')
 
     def call(self, inputs: DecoderInput, state: DecoderState) -> DecoderOutput:

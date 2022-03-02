@@ -12,22 +12,8 @@ class AttentionAggregator(tf.keras.layers.Layer):
         self.W2 = tf.keras.layers.Dense(units, use_bias=False)
         self.attention = tf.keras.layers.AdditiveAttention()
 
-    def call_2d(self, query, value):
-        shape_checker = ShapeChecker()
-        shape_checker(query, ('batch', 'query_units'))
-
-        w1_query = self.W1(query)
-        w1_query = tf.keras.layers.Reshape((1, self.units))(w1_query)
-        shape_checker(w1_query, ('batch', 't', 'attn_units'))
-
-        return self.continue_call(w1_query, value, shape_checker)
-
-    def call_3d(self, query, value):
-        shape_checker = ShapeChecker()
-        shape_checker(query, ('batch', 't', 'query_units'))
-
-        w1_query = self.W1(query)
-        return self.continue_call(w1_query, value, shape_checker)
+    def call(self, query, value):
+        pass
 
     def continue_call(self, w1_query, value, shape_checker):
         shape_checker(value, ('batch', 's', 'value_units'))
@@ -46,6 +32,33 @@ class AttentionAggregator(tf.keras.layers.Layer):
         return context_vector, attention_weights
 
 
+class AttentionAggregator2D(AttentionAggregator):
+    def __init__(self, units):
+        super(AttentionAggregator2D, self).__init__(units)
+
+    def call(self, query, value):
+        shape_checker = ShapeChecker()
+        shape_checker(query, ('batch', 'query_units'))
+
+        w1_query = self.W1(query)
+        w1_query = tf.keras.layers.Reshape((1, self.units))(w1_query)
+        shape_checker(w1_query, ('batch', 't', 'attn_units'))
+
+        return self.continue_call(w1_query, value, shape_checker)
+
+
+class AttentionAggregator3D(AttentionAggregator):
+    def __init__(self, units):
+        super(AttentionAggregator3D, self).__init__(units)
+
+    def call(self, query, value):
+        shape_checker = ShapeChecker()
+        shape_checker(query, ('batch', 't', 'query_units'))
+
+        w1_query = self.W1(query)
+        return self.continue_call(w1_query, value, shape_checker)
+
+
 class BallAggregatorInputs(typing.NamedTuple):
     robot_seq = typing.Any
     ball_seq = typing.Any
@@ -53,7 +66,7 @@ class BallAggregatorInputs(typing.NamedTuple):
 
 class BallAggregator(tf.keras.layers.Layer):
     def __init__(self, units):
-        self.attention = AttentionAggregator(units)
+        self.attention = AttentionAggregator3D(units)
         self.dim = int(units*2/15)
         self.W1 = tf.keras.layers.Dense(self.dim)
 
@@ -61,7 +74,7 @@ class BallAggregator(tf.keras.layers.Layer):
         shape_checker = ShapeChecker()
         shape_checker(inputs.robot_seq, ('batch', 't', 'robot_dims'))
 
-        context_vector, attention_weights = self.attention.call_3d(
+        context_vector, attention_weights = self.attention(
             query=inputs.ball_seq, value=inputs.robot_seq,
         )
 
