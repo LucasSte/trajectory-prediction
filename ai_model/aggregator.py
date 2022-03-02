@@ -60,8 +60,8 @@ class AttentionAggregator3D(AttentionAggregator):
 
 
 class BallAggregatorInputs(typing.NamedTuple):
-    robot_seq = typing.Any
-    ball_seq = typing.Any
+    robot_seq: typing.Any
+    ball_seq: typing.Any
 
 
 class BallAggregator(tf.keras.layers.Layer):
