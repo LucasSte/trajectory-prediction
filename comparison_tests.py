@@ -3,6 +3,7 @@ import numpy as np
 from pykalman import KalmanFilter
 from dataset.kalman_smoother import KalmanSmoother
 from ai_model.losses import TestLoss
+import tensorflow as tf
 
 
 class KalmanFilterComparison:
@@ -73,3 +74,15 @@ class KalmanFilterComparison:
         print(f'Look back: {self.look_back} | Look forth: {self.look_forth}')
         loss.print_error()
 
+
+class MLPBatchLogs(tf.keras.callbacks.Callback):
+    def __init__(self):
+        super(MLPBatchLogs, self).__init__()
+        self.batch_logs = []
+        self.val_logs = []
+
+    def on_train_batch_end(self, batch, logs=None):
+        self.batch_logs.append(logs['loss'])
+
+    def on_test_end(self, logs=None):
+        self.val_logs.append(logs['loss'])
