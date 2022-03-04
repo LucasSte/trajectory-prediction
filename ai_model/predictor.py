@@ -19,25 +19,13 @@ class Predictor(tf.keras.Model):
         self.shape_checker = ShapeChecker()
         self.forcing = forcing
 
-    def _loop_step_no_forcing(self, input_pos, target_pos, enc_output, dec_state):
-        decoder_input = DecoderInput(
-            new_tokens=input_pos,
-            enc_output=enc_output
-        )
-
-        decoder_output = self.decoder(decoder_input, dec_state)
+    def _decoder_step(self, decoder_output, target_pos):
         self.shape_checker(decoder_output.sequence, ('batch', 't'))
-        target_pos = tf.keras.layers.Reshape((self.result_dims,))(target_pos)
+        target_pos = tf.keras.layers.Reshape((self.result_dims, ))(target_pos)
         self.shape_checker(target_pos, ('batch', 't'))
-        dec_state = DecoderState(state_h=decoder_output.state_h, state_c=decoder_output.state_c)
+        dec_sate = DecoderState(state_h=decoder_output.state_h, state_c=decoder_output.state_c)
 
-        return dec_state, tf.keras.layers.Reshape((1, self.result_dims))(decoder_output.sequence)
-
-    def _loop_step(self, new_seq, enc_output, dec_state):
-        input_pos, target_pos = new_seq[:, 0:1, :], new_seq[:, 1:2, :]
-        dec_state, seq = self._loop_step_no_forcing(input_pos, target_pos, enc_output, dec_state)
-
-        return dec_state, seq
+        return dec_sate, tf.keras.layers.Reshape((1, self.result_dims))(decoder_output.sequence)
 
     def _train_step(self, data):
         pass
@@ -116,6 +104,21 @@ class RobotOnlyPredictor(Predictor):
 
         return {'batch_loss': loss}
 
+    def _loop_step_no_forcing(self, input_pos, target_pos, enc_output, dec_state):
+        decoder_input = DecoderInput(
+            new_tokens=input_pos,
+            enc_output=enc_output
+        )
+
+        decoder_output = self.decoder(decoder_input, dec_state)
+        return self._decoder_step(decoder_output, target_pos)
+
+    def _loop_step(self, new_seq, enc_output, dec_state):
+        input_pos, target_pos = new_seq[:, 0:1, :], new_seq[:, 1:2, :]
+        dec_state, seq = self._loop_step_no_forcing(input_pos, target_pos, enc_output, dec_state)
+
+        return dec_state, seq
+
     def _forecast(self, input_seq):
         enc_output = self.encoder(input_seq)
         new_tokens = input_seq[:, (self.look_back - 1):self.look_back, 2:4]
@@ -154,7 +157,7 @@ class BallRobotPredictor(Predictor):
             enc_output=enc_output
         )
         decoder_output = self.decoder(decoder_input, dec_state)
-        # TODO: Simplify decoder step
+        return self._decoder_step(decoder_output, target_pos)
 
     def _train_step(self, data):
         x, y = data
@@ -179,3 +182,61 @@ class BallRobotPredictor(Predictor):
                 ball_enc_output.pos
             )
 
+            if self.forcing:
+                for t in range(1, self.look_forth):
+                    new_seq = y[:, (t-1):(t+1), :]
+                    dec_state, point = self._loop_step_ball(new_seq, enc_context, dec_state, ball_enc_output.pos)
+                    seq = tf.concat([seq, point], axis=1)
+                loss = self.loss(y, seq)
+            else:
+                input_seq = seq
+                for t in range(1, self.look_forth):
+                    target_seq = y[:, (t-1):t, :]
+                    dec_state, point = self._loop_step_no_forcing_ball(input_seq, target_seq, enc_context,
+                                                                       dec_state, ball_enc_output.pos)
+                    input_seq = point
+                    seq = tf.concat([seq, point], axis=1)
+                loss = self.loss(y, seq)
+
+            variables = self.trainable_variables
+            gradients = tape.gradient(loss, variables)
+            self.optimizer.apply_gradients(zip(gradients, variables))
+
+            return {'batch_loss': loss}
+
+    def _forecast(self, input_seq):
+        [robot_seq, ball_seq, ball_mask] = input_seq
+        robot_enc_output = self.encoder(robot_seq)
+        ball_enc_output = self.ball_encoder(
+            BallEncoderInput(
+                sequence=ball_seq,
+                mask=ball_mask
+            )
+        )
+
+        enc_context = self.ball_aggregator(
+            BallAggregatorInputs(
+                ball_seq=ball_enc_output.state_h,
+                robot_seq=robot_enc_output.state_h,
+            )
+        )
+
+        new_tokens = robot_seq[:, (self.look_back-1):self.look_back, 2:4]
+        dec_state = self.decoder_init(DecoderState(state_h=robot_enc_output.state_hb, state_c=robot_enc_output.state_cb))
+
+        result_tokens = []
+        for _ in range(self.look_forth):
+
+            dec_input = DecoderInput(
+                new_tokens=tf.concat([new_tokens, ball_enc_output.pos], axis=2), enc_output=enc_context,
+            )
+            dec_output = self.decoder(dec_input, dec_state)
+            dec_state = DecoderState(
+                state_h=dec_output.state_h,
+                state_c=dec_output.state_c,
+            )
+            new_tokens = tf.expand_dims(dec_output.sequence, axis=1)
+            result_tokens.append(dec_output.sequence)
+
+        result_tokens = tf.stack(result_tokens, axis=1)
+        return result_tokens
