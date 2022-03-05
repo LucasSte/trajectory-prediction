@@ -147,8 +147,9 @@ class LoadDataSet:
             robot_data.append(new_data)
             ball_data.append(ball)
 
-        self.ball_avg, self.ball_std = get_avg_std_for_ball(ball_data)
-        self.robots_avg, self.robots_std = get_avg_std_for_robots(robot_data)
+        if self.ball_avg is None:
+            self.ball_avg, self.ball_std = get_avg_std_for_ball(ball_data)
+            self.robots_avg, self.robots_std = get_avg_std_for_robots(robot_data)
 
         data_x, ball_x, ball_mask, data_y = None, None, None, None
         for i in range(0, len(robot_data)):
@@ -206,5 +207,23 @@ class LoadDataSet:
         for i in range(np.shape(robot_data)[0]):
             robot_data[i] = robot_data[i] * self.robots_std + self.robots_std
 
+    def convert_single(self, x, y):
+        last_pos = x[self.look_back-1, 0:2]
+        last_pos = last_pos*self.robots_std[0:2] + self.robots_avg[0:2]
+        y_local = y*self.robots_std[2:4] + self.robots_avg[2:4]
+        y_local[0] = y_local[0] + last_pos
+        for i in range(1, self.look_forth):
+            y_local[i] = y_local[i-1] + y_local[i]
 
+        return y_local
 
+    def convert_batch(self, x, y):
+        last_pos = x[:, self.look_back-1, 0:2]
+        last_pos = last_pos*self.robots_std[0:2] + self.robots_avg[0:2]
+        y_local = y*self.robots_std[2:4] + self.robots_std[2:4]
+        y_local[:, 0] = y_local[:, 0] + last_pos
+
+        for i in range(1, self.look_forth):
+            y_local[:, i] = y_local[:, i-1] + y_local[:, i]
+
+        return y_local
