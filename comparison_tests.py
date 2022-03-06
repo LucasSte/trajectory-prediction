@@ -40,14 +40,17 @@ class KalmanFilterComparison:
         return res
 
     def process_robots(self, robots):
-        for k in range(len(robots)):
+        for k in range(0, len(robots)):
             for robot_id, series in robots[k].items():
                 if len(series['x']) > self.look_back:
-                    x_sm, y_sm, _, _ = self.smoother.smooth(series['x'], series['y'], series['mask'])
-                    ism = [series['x'][0], 0, series['y'], 0]
+                    x_hat, _, _ = self.smoother.smooth(series['x'], series['y'], series['mask'])
+                    x_sm = x_hat[:, 0]
+                    y_sm = x_hat[:, 2]
+                    ism = [series['x'][0], 0, series['y'][0], 0]
                     kf = KalmanFilter(transition_matrices=self.transition_matrix,
                                       observation_matrices=self.observation_matrix,
                                       initial_state_mean=ism,
+                                      observation_covariance=self.observation_covariance,
                                       transition_covariance=self.transition_covariance)
                     initial = np.array((series['x'][0:self.look_back], series['y'][0:self.look_back])).T
                     means, cov = kf.filter(initial)
@@ -58,9 +61,9 @@ class KalmanFilterComparison:
 
                     means, cov = means[-1], cov[-1]
 
-                    for i in range(self.look_back+1, len(series['x']-self.look_forth-1)):
-                        self.true.append(np.array((x_sm[(i+1):(i+1+self.look_forth)],
-                                                   y_sm[(i+1):(i+1+self.look_forth)])).T)
+                    for i in range(self.look_back + 1, len(series['x']) - self.look_forth - 1):
+                        self.true.append(np.array((x_sm[(i + 1):(i + 1 + self.look_forth)],
+                                                   y_sm[(i + 1):(i + 1 + self.look_forth)])).T)
                         means, cov = kf.filter_update(means, cov,
                                                       np.array((series['x'][i], series['y'][i])))
                         self.predicted.append(np.array(self.get_future(kf.transition_matrices, means)))
@@ -71,6 +74,8 @@ class KalmanFilterComparison:
 
         true = np.array(self.true)
         predicted = np.array(self.predicted)
+        print(np.shape(true))
+        print(np.shape(predicted))
         loss = TestLoss()
         loss(true, predicted)
         print("----Kalman filter results----")
@@ -92,12 +97,13 @@ class MLPBatchLogs(tf.keras.callbacks.Callback):
 
 
 class MLPComparison:
+    model = None
+
     def __init__(self, look_back, look_forth, output_dims, use_cuda=True):
         self.look_back = look_back
         self.output_dims = output_dims
         self.look_forth = look_forth
         os.environ['CUDA_VISIBLE_DEVICES'] = '0' if use_cuda else '-1'
-        self.model = self.create_model()
         self.loader = LoadDataSet(look_back, look_forth)
 
     def create_model(self):
@@ -106,25 +112,31 @@ class MLPComparison:
         x = tf.keras.layers.Dense(1024, activation='relu')(x)
         x = tf.keras.layers.Dense(128, activation='relu')(x)
         x = tf.keras.layers.Flatten()(x)
-        x = tf.keras.layers.Dense(self.output_dims*self.look_forth)(x)
+        x = tf.keras.layers.Dense(self.output_dims * self.look_forth)(x)
         x = tf.keras.layers.Reshape((self.look_forth, self.output_dims))(x)
 
         return tf.keras.Model(inputs=data_input, outputs=x)
 
-    def train_model(self, file_path: list):
+    def train_model(self, file_path: list, model_name):
+        if self.model is None:
+            self.model = self.create_model()
         robot_x, _, _, y = self.loader.load_data(file_path)
         batch_logs = MLPBatchLogs()
 
         self.model.compile(optimizer=tf.optimizers.Adam(), loss=SequenceLoss(), run_eagerly=False)
-        self.model.fit(robot_x, y, epochs=10, batch_size=1024, callbacks=[batch_logs], validation_split=0.1)
+        self.model.fit(robot_x, y, epochs=2, batch_size=1024, callbacks=[batch_logs], validation_split=0.1)
 
         plt.figure()
         plt.plot(batch_logs.batch_logs)
         plt.title('Batch loss during training')
         plt.plot(batch_logs.val_logs)
         plt.title('Batch loss during validation')
+        self.model.compile(optimizer=tf.optimizers.Adam(), loss=tf.losses.mean_squared_error)
+        self.model.save(model_name + '.h5')
 
-    def test_model(self, file_path: list):
+    def test_model(self, file_path: list, model_name):
+        if self.model is None:
+            self.model = tf.keras.models.load_model(model_name + '.h5')
         robot_x, _, _, y = self.loader.load_data(file_path, for_test=True)
 
         response = self.model.predict(robot_x)
@@ -134,5 +146,3 @@ class MLPComparison:
         test_loss = TestLoss()
         test_loss(y[:, :, 0:2], y_pred_conv)
         test_loss.print_error()
-
-

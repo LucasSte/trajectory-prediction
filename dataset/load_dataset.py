@@ -205,7 +205,7 @@ class LoadDataSet:
 
     def convert_to_real(self, robot_data):
         for i in range(np.shape(robot_data)[0]):
-            robot_data[i] = robot_data[i] * self.robots_std + self.robots_std
+            robot_data[i] = robot_data[i] * self.robots_std[0:4] + self.robots_std[0:4]
 
     def convert_single(self, x, y):
         last_pos = x[self.look_back-1, 0:2]
