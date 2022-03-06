@@ -179,7 +179,7 @@ class BallRobotPredictor(Predictor):
 
             dec_state, seq = self._loop_step_ball(
                 tf.stack([robot_data[:, self.look_back-1, 2:4], y[:, 0, :]], axis=1), robot_enc_output.state_h,
-                dec_state, tf.cast(enc_context, dtype=tf.double)
+                dec_state, tf.cast(enc_context, dtype=tf.float32)
             )
 
             if self.forcing:

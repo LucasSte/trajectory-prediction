@@ -49,7 +49,6 @@ class BallEncoderOutput(typing.NamedTuple):
     sequence: typing.Any
     state_h: typing.Any
     state_c: typing.Any
-    position_agg: typing.Any
 
 
 class BallEncoder(tf.keras.layers.Layer):
@@ -58,7 +57,6 @@ class BallEncoder(tf.keras.layers.Layer):
         self.enc_units = int(enc_units/2)
         self.lstm_config = tf.keras.layers.LSTM(self.enc_units, return_state=True, return_sequences=True)
         self.bi_lstm = tf.keras.layers.Bidirectional(self.lstm_config)
-        self.W1 = tf.keras.layers.Dense(4)
 
     def call(self, inputs: BallEncoderInput, state=None):
         shape_checker = ShapeChecker()
@@ -74,11 +72,8 @@ class BallEncoder(tf.keras.layers.Layer):
         state_h = tf.stack([state_hf, state_hb], axis=1)
         state_c = tf.stack([state_cf, state_cb], axis=1)
 
-        pos_agg = self.W1(state_h)
-        pos_agg = tf.keras.layers.Reshape((1, 8))(pos_agg)
         return BallEncoderOutput(
             sequence=output,
             state_h=state_h,
             state_c=state_c,
-            position_agg=pos_agg,
         )
