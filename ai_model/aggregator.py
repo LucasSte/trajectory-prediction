@@ -1,7 +1,7 @@
 import typing
 
 import tensorflow as tf
-from shape_checker import ShapeChecker
+from .shape_checker import ShapeChecker
 
 
 class AttentionAggregator(tf.keras.layers.Layer):
@@ -19,7 +19,7 @@ class AttentionAggregator(tf.keras.layers.Layer):
         shape_checker(value, ('batch', 's', 'value_units'))
 
         w2_key = self.W2(value)
-        w2_key = self.W2(w2_key, ('batch', 's', 'attn_units'))
+        shape_checker(w2_key, ('batch', 's', 'attn_units'))
 
         context_vector, attention_weights = self.attention(
             inputs=[w1_query, value, w2_key],
@@ -66,6 +66,7 @@ class BallAggregatorInputs(typing.NamedTuple):
 
 class BallAggregator(tf.keras.layers.Layer):
     def __init__(self, units):
+        super(BallAggregator, self).__init__()
         self.attention = AttentionAggregator3D(units)
         self.dim = int(units*2/15)
         self.W1 = tf.keras.layers.Dense(self.dim)

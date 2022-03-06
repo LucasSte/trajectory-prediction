@@ -1,7 +1,7 @@
 import typing
 import tensorflow as tf
-from aggregator import AttentionAggregator2D
-from shape_checker import ShapeChecker
+from .aggregator import AttentionAggregator2D
+from .shape_checker import ShapeChecker
 
 
 class DecoderInput(typing.NamedTuple):

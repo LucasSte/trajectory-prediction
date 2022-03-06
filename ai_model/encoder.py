@@ -1,6 +1,6 @@
 import typing
 import tensorflow as tf
-from shape_checker import ShapeChecker
+from .shape_checker import ShapeChecker
 
 
 class EncoderOutput(typing.NamedTuple):

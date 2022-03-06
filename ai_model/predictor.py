@@ -1,8 +1,8 @@
-from aggregator import BallAggregator, BallAggregatorInputs
+from .aggregator import BallAggregator, BallAggregatorInputs
 import tensorflow as tf
-from encoder import Encoder, BallEncoder, BallEncoderInput
-from decoder import DecoderInitializer, Decoder, DecoderInput, DecoderState
-from shape_checker import ShapeChecker
+from .encoder import Encoder, BallEncoder, BallEncoderInput
+from .decoder import DecoderInitializer, Decoder, DecoderInput, DecoderState
+from .shape_checker import ShapeChecker
 
 
 class Predictor(tf.keras.Model):
@@ -81,7 +81,7 @@ class RobotOnlyPredictor(Predictor):
             loss = tf.constant(0.0)
 
             dec_state, seq = self._loop_step(
-                tf.stack([x[:, self.look_back - 1, 2:(4 + self.use_psi)], y[:, 0:]], axis=1),
+                tf.stack([x[:, self.look_back - 1, 2:4], y[:, 0, :]], axis=1),
                 enc_output.state_h, dec_state)
             if self.forcing:
                 for t in range(1, self.look_forth):
@@ -177,23 +177,23 @@ class BallRobotPredictor(Predictor):
                                                        state_c=robot_enc_output.state_cb))
             loss = tf.constant(0.0)
 
-            dec_state, seq = self._loop_step(
-                tf.stack([robot_data[:, self.look_back-1, 2:4], y[:, 0, :]], axis=1), enc_context, dec_state,
-                ball_enc_output.pos
+            dec_state, seq = self._loop_step_ball(
+                tf.stack([robot_data[:, self.look_back-1, 2:4], y[:, 0, :]], axis=1), robot_enc_output.state_h,
+                dec_state, tf.cast(enc_context, dtype=tf.double)
             )
 
             if self.forcing:
                 for t in range(1, self.look_forth):
                     new_seq = y[:, (t-1):(t+1), :]
-                    dec_state, point = self._loop_step_ball(new_seq, enc_context, dec_state, ball_enc_output.pos)
+                    dec_state, point = self._loop_step_ball(new_seq, robot_enc_output.state_h, dec_state, enc_context)
                     seq = tf.concat([seq, point], axis=1)
                 loss = self.loss(y, seq)
             else:
                 input_seq = seq
                 for t in range(1, self.look_forth):
                     target_seq = y[:, (t-1):t, :]
-                    dec_state, point = self._loop_step_no_forcing_ball(input_seq, target_seq, enc_context,
-                                                                       dec_state, ball_enc_output.pos)
+                    dec_state, point = self._loop_step_no_forcing_ball(input_seq, target_seq, robot_enc_output.state_h,
+                                                                       dec_state, enc_context)
                     input_seq = point
                     seq = tf.concat([seq, point], axis=1)
                 loss = self.loss(y, seq)
@@ -228,7 +228,7 @@ class BallRobotPredictor(Predictor):
         for _ in range(self.look_forth):
 
             dec_input = DecoderInput(
-                new_tokens=tf.concat([new_tokens, ball_enc_output.pos], axis=2), enc_output=enc_context,
+                new_tokens=tf.concat([new_tokens, enc_context], axis=2), enc_output=robot_enc_output.state_h,
             )
             dec_output = self.decoder(dec_input, dec_state)
             dec_state = DecoderState(
