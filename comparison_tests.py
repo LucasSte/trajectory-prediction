@@ -42,7 +42,7 @@ class KalmanFilterComparison:
     def process_robots(self, robots):
         for k in range(0, len(robots)):
             for robot_id, series in robots[k].items():
-                if len(series['x']) > self.look_back:
+                if len(series['x']) > self.look_back + self.look_forth + 1:
                     x_hat, _, _ = self.smoother.smooth(series['x'], series['y'], series['mask'])
                     x_sm = x_hat[:, 0]
                     y_sm = x_hat[:, 2]
@@ -64,6 +64,7 @@ class KalmanFilterComparison:
                     for i in range(self.look_back + 1, len(series['x']) - self.look_forth - 1):
                         self.true.append(np.array((x_sm[(i + 1):(i + 1 + self.look_forth)],
                                                    y_sm[(i + 1):(i + 1 + self.look_forth)])).T)
+
                         means, cov = kf.filter_update(means, cov,
                                                       np.array((series['x'][i], series['y'][i])))
                         self.predicted.append(np.array(self.get_future(kf.transition_matrices, means)))
@@ -74,8 +75,6 @@ class KalmanFilterComparison:
 
         true = np.array(self.true)
         predicted = np.array(self.predicted)
-        print(np.shape(true))
-        print(np.shape(predicted))
         loss = TestLoss()
         loss(true, predicted)
         print("----Kalman filter results----")
