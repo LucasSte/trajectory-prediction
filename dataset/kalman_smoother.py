@@ -49,17 +49,17 @@ class KalmanSmoother:
         return auto_ks.KalmanSmootherParameters(self.A, w_neg_sqrt, self.C, v_neg_sqrt), r
 
     def fit_for_series(self, x, y, mask, lr, niter):
-        y = np.stack([x, y], axis=1)
+        t = np.stack([x, y], axis=1)
         K_pos = np.array(mask, dtype=np.bool)
         K = np.repeat(K_pos[:, None], 2, axis=1)
-        self.params, _ = auto_ks.tune(self.params_initial, self.prox, y, K, self.lam, lr=lr, verbose=False, niter=niter)
+        self.params, _ = auto_ks.tune(self.params_initial, self.prox, t, K, self.lam, lr=lr, verbose=False, niter=niter)
 
     def smooth(self, x, y, mask):
-        y = np.stack([x, y], axis=1)
+        t = np.stack([x, y], axis=1)
         K_pos = np.array(mask, dtype=np.bool)
         K = np.repeat(K_pos[:, None], 2, axis=1)
 
-        return auto_ks.kalman_smoother(self.params, y, K, self.lam)
+        return auto_ks.kalman_smoother(self.params, t, K, self.lam)
 
     def test_for_series(self, x, y, mask):
         xhat, yhat, DT = self.smooth(x, y, mask)

@@ -5,10 +5,6 @@ import numpy as np
 
 
 class Smoother:
-
-    robots_b = {'position': {'x': [], 'y': []}, 'speed': {'x': [], 'y': []}, 'psi': [], 'stop_id': [], 'time_c': []}
-    robots_y = {'position': {'x': [], 'y': []}, 'speed': {'x': [], 'y': []}, 'psi': [], 'stop_id': [], 'time_c': []}
-    ball = {}
     position_smoother = KalmanSmoother()
     psi_smoother = KalmanSmoother()
     ball_smoother = KalmanSmoother()
@@ -28,8 +24,7 @@ class Smoother:
     def process_robots_data(self, robots, stop_id, response):
         for k in range(len(robots)):
             for robot_id, data in robots[k].items():
-                if len(data['x']) > 60:
-
+                if len(data['x']) > 101:
                     xhat, _, _ = self.position_smoother.smooth(data['x'], data['y'], data['mask'])
                     response['position']['x'].append(xhat[:, 0])
                     response['position']['y'].append(xhat[:, 2])
@@ -42,6 +37,7 @@ class Smoother:
 
                     response['time_c'].append(data['time_c'])
                     response['stop_id'].append(stop_id[k])
+
 
     def process_ball_data(self, ball, stop_id, response):
         for k in range(len(ball)):
@@ -56,16 +52,20 @@ class Smoother:
             }
 
     def smooth_data(self, source_file, dest_file):
+        robots_b = {'position': {'x': [], 'y': []}, 'speed': {'x': [], 'y': []}, 'psi': [], 'stop_id': [], 'time_c': []}
+        robots_y = {'position': {'x': [], 'y': []}, 'speed': {'x': [], 'y': []}, 'psi': [], 'stop_id': [], 'time_c': []}
+        ball = {}
+
         file = open(source_file + '.pkl', 'rb')
         data = pickle.load(file)
-        self.process_robots_data(data['blue'], data['stop_id'], self.robots_b)
-        self.process_robots_data(data['yellow'], data['stop_id'], self.robots_y)
-        self.process_ball_data(data['ball'], data['stop_id'], self.ball)
+        self.process_robots_data(data['blue'], data['stop_id'], robots_b)
+        self.process_robots_data(data['yellow'], data['stop_id'], robots_y)
+        self.process_ball_data(data['ball'], data['stop_id'], ball)
 
         all_data = {
-            'yellow': self.robots_y,
-            'blue': self.robots_b,
-            'ball': self.ball,
+            'yellow': robots_y,
+            'blue': robots_b,
+            'ball': ball,
         }
 
         with open(dest_file + '.pkl', 'wb') as f:
