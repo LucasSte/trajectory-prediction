@@ -123,7 +123,7 @@ class MLPComparison:
         batch_logs = MLPBatchLogs()
 
         self.model.compile(optimizer=tf.optimizers.Adam(), loss=SequenceLoss(), run_eagerly=False)
-        self.model.fit(robot_x, y, epochs=2, batch_size=1024, callbacks=[batch_logs], validation_split=0.1)
+        self.model.fit(robot_x, y, epochs=10, batch_size=1024, callbacks=[batch_logs], validation_split=0.1)
 
         plt.figure()
         plt.plot(batch_logs.batch_logs)

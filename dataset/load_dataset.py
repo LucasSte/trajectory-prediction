@@ -22,8 +22,8 @@ def merge_teams(team_1, team_2):
 
     data['position']['x'] = team_1['position']['x'] + team_2['position']['x']
     data['position']['y'] = team_1['position']['y'] + team_2['position']['y']
-    data['speed']['x'] = team_1['speed']['x'] + team_2['speed']['y']
-    data['speed']['y'] = team_1['speed']['x'] + team_2['speed']['y']
+    data['speed']['x'] = team_1['speed']['x'] + team_2['speed']['x']
+    data['speed']['y'] = team_1['speed']['y'] + team_2['speed']['y']
     data['psi'] = team_1['psi'] + team_2['psi']
     data['stop_id'] = team_1['stop_id'] + team_2['stop_id']
     data['time_c'] = team_1['time_c'] + team_2['time_c']
@@ -205,7 +205,7 @@ class LoadDataSet:
 
     def convert_to_real(self, robot_data):
         for i in range(np.shape(robot_data)[0]):
-            robot_data[i] = robot_data[i] * self.robots_std[0:4] + self.robots_std[0:4]
+            robot_data[i] = robot_data[i] * self.robots_std[0:4] + self.robots_avg[0:4]
 
     def convert_single(self, x, y):
         last_pos = x[self.look_back-1, 0:2]
@@ -220,7 +220,7 @@ class LoadDataSet:
     def convert_batch(self, x, y):
         last_pos = x[:, self.look_back-1, 0:2]
         last_pos = last_pos*self.robots_std[0:2] + self.robots_avg[0:2]
-        y_local = y*self.robots_std[2:4] + self.robots_std[2:4]
+        y_local = y*self.robots_std[2:4] + self.robots_avg[2:4]
         y_local[:, 0] = y_local[:, 0] + last_pos
 
         for i in range(1, self.look_forth):
