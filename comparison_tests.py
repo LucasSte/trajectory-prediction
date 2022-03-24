@@ -10,8 +10,6 @@ import matplotlib.pyplot as plt
 
 
 class KalmanFilterComparison:
-    true = []
-    predicted = []
 
     def __init__(self, look_back, look_forth, data_file, params_file):
         self.look_back = look_back
@@ -30,6 +28,10 @@ class KalmanFilterComparison:
 
         self.smoother = KalmanSmoother()
         self.smoother.load_params(params_file)
+        self.true = []
+        self.predicted = []
+        robots_f.close()
+        filter_params_f.close()
 
     def get_future(self, a_matrix, last_pos):
         res = []
@@ -42,7 +44,7 @@ class KalmanFilterComparison:
     def process_robots(self, robots):
         for k in range(0, len(robots)):
             for robot_id, series in robots[k].items():
-                if len(series['x']) > self.look_back + self.look_forth + 1:
+                if len(series['x']) > 101:
                     x_hat, _, _ = self.smoother.smooth(series['x'], series['y'], series['mask'])
                     x_sm = x_hat[:, 0]
                     y_sm = x_hat[:, 2]
@@ -68,6 +70,7 @@ class KalmanFilterComparison:
                         means, cov = kf.filter_update(means, cov,
                                                       np.array((series['x'][i], series['y'][i])))
                         self.predicted.append(np.array(self.get_future(kf.transition_matrices, means)))
+                    break
 
     def perform_test(self):
         self.process_robots(self.robots_t['blue'])
@@ -125,11 +128,11 @@ class MLPComparison:
         self.model.compile(optimizer=tf.optimizers.Adam(), loss=SequenceLoss(), run_eagerly=False)
         self.model.fit(robot_x, y, epochs=10, batch_size=1024, callbacks=[batch_logs], validation_split=0.1)
 
-        plt.figure()
-        plt.plot(batch_logs.batch_logs)
-        plt.title('Batch loss during training')
-        plt.plot(batch_logs.val_logs)
-        plt.title('Batch loss during validation')
+        # plt.figure()
+        # plt.plot(batch_logs.batch_logs)
+        # plt.title('Batch loss during training')
+        # plt.plot(batch_logs.val_logs)
+        # plt.title('Batch loss during validation')
         self.model.compile(optimizer=tf.optimizers.Adam(), loss=tf.losses.mean_squared_error)
         self.model.save(model_name + '.h5')
 

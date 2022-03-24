@@ -49,13 +49,13 @@ def train_models(look_back, look_forth, output_dims, robot_model_name, ball_mode
     #plots(batch_logs)
 
 
-train_models(30, 15, 2, 'robot_30_15', 'ball_30_15')
-train_models(60, 30, 2, 'robot_30_60', 'ball_30_60')
+train_models(30, 15, 2, 'robot_30_15_t', 'ball_30_15_t')
+train_models(60, 30, 2, 'robot_30_60_t', 'ball_30_60_t')
 
-# print('--- Training MLP model 15 -> 30')
-# mlp_comparison_model = MLPComparison(30, 15, 2)
-# mlp_comparison_model.train_model(files, 'mlp_comp')
-#
-# print('--- Training MLP model 30 -> 60')
-# mlp_comparison_model = MLPComparison(60, 0, 2)
-# mlp_comparison_model.train_model(files, 'mlp_comp_2')
+print('--- Training MLP model 15 -> 30')
+mlp_comparison_model = MLPComparison(30, 15, 2)
+mlp_comparison_model.train_model(files, 'mlp_comp')
+
+print('--- Training MLP model 30 -> 60')
+mlp_comparison_model = MLPComparison(60, 30, 2)
+mlp_comparison_model.train_model(files, 'mlp_comp_2')

@@ -36,21 +36,21 @@ def compare_models(look_back, look_forth, output_dims, robot_model_name, ball_mo
     test_loss.print_error()
 
 
-compare_models(30, 15, 2, 'robot_30_15', 'ball_30_15')
-compare_models(60, 30, 2, 'robot_30_60', 'ball_30_60')
+compare_models(30, 15, 2, 'robot_30_15_t', 'ball_30_15_t')
+compare_models(60, 30, 2, 'robot_30_60_t', 'ball_30_60_t')
 
-# print('--- Results for MLP model 15 -> 30')
-# mlp_comparison_model = MLPComparison(15, 30, 2)
-# mlp_comparison_model.test_model(files, 'mlp_comp')
-#
-# print('--- Results for MLP model 30 -> 60')
-# mlp_comparison_model = MLPComparison(30, 60, 2)
-# mlp_comparison_model.test_model(files, 'mlp_comp_2')
-#
-# kf_comp = KalmanFilterComparison(15, 30, 'dataset/data_set_3', 'dataset/position_series_params')
-# kf_comp.perform_test()
-#
-# kf_comp = KalmanFilterComparison(30, 60, 'dataset/data_set_3', 'dataset/position_series_params')
-# kf_comp.perform_test()
+print('--- Results for MLP model 30 -> 15')
+mlp_comparison_model = MLPComparison(30, 15, 2)
+mlp_comparison_model.test_model(files, 'mlp_comp')
+
+print('--- Results for MLP model 60 -> 30')
+mlp_comparison_model = MLPComparison(60, 30, 2)
+mlp_comparison_model.test_model(files, 'mlp_comp_2')
+
+kf_comp = KalmanFilterComparison(30, 15, 'dataset/data_set_3', 'dataset/position_series_params')
+kf_comp.perform_test()
+
+kf_comp_2 = KalmanFilterComparison(60, 30, 'dataset/data_set_3', 'dataset/position_series_params')
+kf_comp_2.perform_test()
 
 
