@@ -29,14 +29,14 @@ def optimize_model(list_idx, look_back, look_forth, input_dims, output_dims, bat
 
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
     tf_quant_model = converter.convert()
-    with open('./optimized_models/' + opt_models[list_idx] + '.tflite', 'wb') as f:
+    with open('./optimized_models/' + opt_models[list_idx] + str(batch_size) + '.tflite', 'wb') as f:
         f.write(tf_quant_model)
 
 
 def common_step(list_idx, look_back, look_forth, batch_size):
-    if not os.path.exists('./optimized_models/' + opt_models[list_idx] + '.tflite')
+    if not os.path.exists('./optimized_models/' + opt_models[list_idx] + str(batch_size) + '.tflite'):
         optimize_model(list_idx, look_back, look_forth, 5, 2, batch_size)
-    interpreter = tf.lite.Interpreter('./optimized_models/' + opt_models[list_idx] + '.tflite')
+    interpreter = tf.lite.Interpreter('./optimized_models/' + opt_models[list_idx] + str(batch_size) + '.tflite')
     interpreter.allocate_tensors()
 
     input_details = interpreter.get_input_details()
@@ -91,5 +91,11 @@ def score_test(list_idx, look_back, look_forth):
     test_loss.print_error()
 
 
+batch_inference_time(0, 30, 15, 1)
+batch_inference_time(0, 30, 15, 11)
 score_test(0, 30, 15)
+
+batch_inference_time(1, 60, 30, 1)
+batch_inference_time(1, 60, 30, 11)
+score_test(1, 60, 30)
 

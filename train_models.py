@@ -38,7 +38,8 @@ def train_models(look_back, look_forth, output_dims, robot_model_name, ball_mode
     batch_logs = BatchLogs()
     seq_predictor.fit(robot_x, y, epochs=10, batch_size=2048, callbacks=[batch_logs], validation_split=0.1)
     seq_predictor.save_model(robot_model_name)
-    #plots(batch_logs)
+    # Uncomment plots if you want to visualize training metrics
+    # plots(batch_logs)
 
     print(f'--- Training ball model {look_back} -> {look_forth}')
     seq_predictor = BallRobotPredictor(look_back, look_back, look_forth, output_dims, use_tf_function=True, forcing=False)
@@ -46,7 +47,8 @@ def train_models(look_back, look_forth, output_dims, robot_model_name, ball_mode
     batch_logs = BatchLogs()
     seq_predictor.fit([robot_x, ball_x, ball_mask], y, epochs=10, batch_size=2048, callbacks=[batch_logs], validation_split=0.1)
     seq_predictor.save_model(ball_model_name)
-    #plots(batch_logs)
+    # Uncomment plots if you want to visualize training metrics
+    # plots(batch_logs)
 
 
 train_models(30, 15, 2, 'robot_30_15_t', 'ball_30_15_t')

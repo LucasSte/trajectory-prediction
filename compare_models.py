@@ -20,10 +20,9 @@ def compare_models(look_back, look_forth, output_dims, robot_model_name, ball_mo
 
     y_pred_conv = loader.convert_batch(robot_x, res)
     test_loss = TestLoss()
-    test_loss(y[:, :, 0:2], y_pred_conv)
+    test_loss(y[:, 0:15, 0:2], y_pred_conv[:, 0:15])
     print(f'--- Results for robot model {look_back} -> {look_forth}')
     test_loss.print_error()
-
 
     seq_predictor = BallRobotPredictor(look_back, look_back, look_forth, output_dims, use_tf_function=True, forcing=False)
     seq_predictor.load_model(ball_model_name)
