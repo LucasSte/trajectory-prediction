@@ -8,8 +8,7 @@ for each time step, like the following:
 [x y v_x v_y psi]
 ```
 
-We set up our model with a look back window of 30 time steps to predict the next 15 time steps and with a look back window of
-60 time steps to forecast the next 30. The network predicts a sequence of `[v_x v_y]`, which we integrate to find the
+The network predicts a sequence of `[v_x v_y]`, which we integrate to find the
 robot's future trajectory. A representation of the neural network is depicted below:
 
 ![alt text](https://github.com/LucasSte/trajectory-prediction/raw/master/docs/Robot_overview_nn.png)
@@ -48,6 +47,6 @@ uncomment the `plot` function in `train_models.py` and in `comparison_tests.py`.
 
 #### Testing the models
 
-Running `python3 comapre_models.py` will run all the trained configuration in a testing set.
+Running `python3 compare_models.py` will run all the trained configurations in a testing set.
 It will calculate the mean average error, average displacement error and final displacement error and print them.
-It will also run a Kalman predictor to compare the results.
+It will also measure such metrics for a Kalman predictor, which serves as a reference for comparison.
