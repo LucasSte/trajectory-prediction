@@ -24,7 +24,7 @@ class TestLoss:
         return np.mean(y_sum_total)
 
     @staticmethod
-    def average_distance(y_true, y_pred):  # Average displacement error
+    def average_displacement_error(y_true, y_pred):
         y_diff = y_true - y_pred
         y_sq = np.square(y_diff)
         y_dis = np.sqrt(np.sum(y_sq, axis=2))
@@ -32,7 +32,7 @@ class TestLoss:
         return np.mean(y_dis_total)
 
     @staticmethod
-    def average_final_displacement(y_true, y_pred):  # Final displacement error
+    def final_displacement_error(y_true, y_pred):
         y_diff = y_true[:, -1, :] - y_pred[:, -1, :]
         y_sq = np.square(y_diff)
         y_dis = np.sqrt(np.sum(y_sq, axis=1))
@@ -41,8 +41,8 @@ class TestLoss:
     def __call__(self, y_true, y_pred):
         res = {
             'MAE': TestLoss.mean_absolute_error(y_true, y_pred),
-            'ADE': TestLoss.average_distance(y_true, y_pred),
-            'FDE': TestLoss.average_final_displacement(y_true, y_pred)
+            'ADE': TestLoss.average_displacement_error(y_true, y_pred),
+            'FDE': TestLoss.final_displacement_error(y_true, y_pred)
         }
 
         self.error = res
