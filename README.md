@@ -7,14 +7,23 @@ for each time step, like the following:
 ```
 [x y v_x v_y psi]
 ```
-//TODO: Add images!
 
 We set up our model with a look back window of 30 time steps to predict the next 15 time steps and with a look back window of
 60 time steps to forecast the next 30. The network predicts a sequence of `[v_x v_y]`, which we integrate to find the
-robot's future trajectory.
+robot's future trajectory. A representation of the neural network is depicted below:
+
+![alt text](https://github.com/LucasSte/trajectory-prediction/raw/master/docs/Robot_overview_nn.png)
 
 We also analysed adding information about the ball, in an attempt to improve prediction. We conceived a ball encoder that
-processes a sequence of position and velocity for the ball and aggregates that into the prediction.
+processes a sequence of position and velocity for the ball and aggregates that into the prediction. A diagram containing the architecture to aggregate 
+information about the ball is available below:
+
+![alt text](https://github.com/LucasSte/trajectory-prediction/raw/master/docs/ball_encoder.png)
+
+#### More information
+
+To find out more about the model's architecture, training and testing procedures, please check out
+my [graduation thesis](https://github.com/LucasSte/Research/blob/4c6dd15c91670505114df42b3bab0490a8bf1844/tese.pdf).
 
 ### Running the models
 
@@ -42,8 +51,3 @@ uncomment the `plot` function in `train_models.py` and in `comparison_tests.py`.
 Running `python3 comapre_models.py` will run all the trained configuration in a testing set.
 It will calculate the mean average error, average displacement error and final displacement error and print them.
 It will also run a Kalman predictor to compare the results.
-
-### More information
-
-To find out more about the model's architecture, training and testing procedures, please check out
-my [graduation thesis](https://github.com/LucasSte/Research/blob/4c6dd15c91670505114df42b3bab0490a8bf1844/tese.pdf).
